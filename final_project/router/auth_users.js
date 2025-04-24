@@ -105,29 +105,19 @@ regd_users.put("/review/:isbn", verifyToken, (req, res) => {
   );
 });
 
-regd_users.delete("/review/:isbn",  (req, res) => {
-  const isbn  = req.params.isbn;
-  const username = req.user?.username;
-
-  if (!username) {
-    return res.status(401).json({ message: "User not logged in." });
+regd_users.delete("/review/:isbn", (req, res) => {
+  const user = req.session.authorization.username;
+  const isbn = req.params.isbn;
+  if (!books[isbn]) {
+    res.status(400).json({ message: "invalid ISBN." });
+  } else if (!books[isbn].reviews[user]) {
+    res
+      .status(400)
+      .json({ message: `${user} hasn't submitted a review for this book.` });
+  } else {
+    delete books[isbn].reviews[user];
+    res.status(200).json({ message: "Book review deleted." });
   }
-
-  const book = books[isbn];
-  if (!book) {
-    return res.status(404).json({ message: "Book not found." });
-  }
-
-  if (!book.reviews[username]) {
-    return res.status(404).json({ message: "No review found for this user to delete." });
-  }
-
-  // Delete the user's review
-  delete book.reviews[username];
-
-  return res.status(200).json({
-    message: `Review by '${username}' for book with ISBN ${isbn} has been deleted.`,
-  });
 });
 
 
